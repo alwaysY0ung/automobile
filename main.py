@@ -4,7 +4,7 @@
 from preproccessing import Preprocessor
 
 def main():
-    # feature preprocessing
+    # feature preprocessing (from preproccessing.py)
     pp = Preprocessor() # 파라미터 2개 모두 기본값 사용
     pp.step1() # print(df1) # 잘됨
     print("step1 완료")
@@ -16,7 +16,7 @@ def main():
     # sliding window
     # TODO
 
-    # model
+    # model (from conv2d.py)
     # autoencoder
 
 
