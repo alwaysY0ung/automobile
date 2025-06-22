@@ -201,15 +201,16 @@ class DataDecoder:
             # print(f"time duplicated 처리 후 데이터프레임의 길이: {len(result)}")
         
         # TODO min ~ Max 사이 t 간격으로 모든 index
-
         if time:
             index_new = pd.timedelta_range(start=result.index.min(),
                                         end=result.index.max(), freq=time)
-            result = result.reindex(index=index_new)
+            result = result.reindex(index=index_new) # 누락된 구간은 NaN으로 채워지므로 후처리가 필요할 수 있음
 
-        # 바꿀 때 arbitrationID_컬럼명 이렇게 바꿔준다 (컬럼명 중복이 가끔 있음)
-        
+        # TODO 바꿀 때 arbitrationID_컬럼명 이렇게 바꿔준다 (컬럼명 중복이 가끔 있음)
         result.columns = [f"{int(identifier):03X}_{col}" for col in result.columns]
+
+        # 
+
 
         return result
 
