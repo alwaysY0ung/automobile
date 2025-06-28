@@ -4,6 +4,7 @@
 import pandas as pd
 import numpy as np
 import cantools
+from data_scaler import MinMaxScalerFromDBC
 
 class DataDecoder:
     def __init__(self, df, dbc_file_path='datasets/hyundai_2015_ccan.dbc'):
@@ -99,7 +100,7 @@ class DataDecoder:
             i += 1
         return result
     
-    def merge(self, time=False):
+    def merge(self, time='0.005s', flag=True):
         parsed_ID = self.parsed_ID
         store = []
         t = time
@@ -114,7 +115,7 @@ class DataDecoder:
                 print(f"{identifier}가 CAN.dbc 파일에 존재합니다. 인덱스는 {t}이며, Deserialize 작업을 시작합니다.")
                 
                 # deserialize 함수 호출하여 데이터 변환
-                new_df = self.deserialize(identifier, t)
+                new_df = self.deserialize(identifier, t, flag)
                 store.append(new_df)
                 
             else:
@@ -122,9 +123,11 @@ class DataDecoder:
 
         # concat은 루프 밖에서하고, concat한 데이터프레임 출력
         df_merged = pd.concat(store, axis=1, verify_integrity=False)
+        print("1\n",df_merged)
         df_merged = df_merged[~df_merged.index.duplicated(keep='last')]
-
+        print("2\n",df_merged)
         df_merged = df_merged.ffill().dropna() # ffill -> dropna -> 107개 추출
+        print("3\n",df_merged)
         the_107_signals = [
             '044_CR_Datc_OutTempC', '044_CF_Datc_IncarTemp', '080_PV_AV_CAN', '080_N', '080_TQI_ACOR',
             '080_TQFR', '080_TQI', '081_BRAKE_ACT', '081_CF_Ems_EngOperStat', '081_CR_Ems_IndAirTemp',
@@ -150,10 +153,10 @@ class DataDecoder:
         ]
         df_merged = df_merged[[col for col in the_107_signals if col in df_merged.columns]] # df_merged에 107컬럼에 존재하지 않는 컬럼명이 있으면 에러 발생하므로 이를 방지
                                                                                             # df_merged > 107컬럼 포함관계라면 df_merged = df_merged[the_107_signals] 로 빠르게 연산 가능
-
+        print("4\n",df_merged)
         return df_merged
 
-    def deserialize(self, identifier, time=False):
+    def deserialize(self, identifier, time=False, flag=True):
         df = self.df
         db_2015_ccan = self.db_2015_ccan
         """
@@ -165,7 +168,9 @@ class DataDecoder:
                             df_deserialized_902 = deserialize(902, df1,'0.25s')
                             df_deserialized_902 = deserialize(902, df1)
                             """
-        filtered_df = df[df["Identifier"]==str(identifier)]
+        # filtered_df = df[df["Identifier"]==str(identifier)]
+        filtered_df = df[df["Identifier"].astype(str) == str(identifier)] # 6월 말, test 데이터 전처리 중 문제가 생겨서 df 컬럼에도 str 변환 추가함
+
 
         # Data컬럼 solution1: apply 메서드
         filtered_df = filtered_df.copy()
@@ -200,16 +205,18 @@ class DataDecoder:
             result = result[~result.index.duplicated(keep='last')]
             # print(f"time duplicated 처리 후 데이터프레임의 길이: {len(result)}")
         
-        # TODO min ~ Max 사이 t 간격으로 모든 index
-        if time:
-            index_new = pd.timedelta_range(start=result.index.min(),
-                                        end=result.index.max(), freq=time)
-            result = result.reindex(index=index_new) # 누락된 구간은 NaN으로 채워지므로 후처리가 필요할 수 있음
+        if flag:
+            # TODO min ~ Max 사이 t 간격으로 모든 index
+            if time:
+                index_new = pd.timedelta_range(start=result.index.min(),
+                                            end=result.index.max(), freq=time)
+                result = result.reindex(index=index_new) # 누락된 구간은 NaN으로 채워지므로 후처리가 필요할 수 있음
 
         # TODO 바꿀 때 arbitrationID_컬럼명 이렇게 바꿔준다 (컬럼명 중복이 가끔 있음)
         result.columns = [f"{int(identifier):03X}_{col}" for col in result.columns]
 
-        # 
+        scaler = MinMaxScalerFromDBC()
+        result = scaler.scale(result)
 
 
         return result
