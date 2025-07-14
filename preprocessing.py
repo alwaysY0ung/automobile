@@ -106,7 +106,7 @@ class TestPreprocessor():
         self.loader = DataLoader(cache_dir=cache_dir) # 기존 DataLoader 재사용
 
 
-    def step1(self, time='0.0005s', attack_types_to_process=None):
+    def step1(self, time='0.005s', attack_types_to_process=None):
         """
                 Args:
                     time_resample_freq (str): 데이터를 리샘플링할 시간 간격.
@@ -184,7 +184,7 @@ class TestPreprocessor():
             'cache_paths': cache_paths_info
         }
     
-    def _get_attack_type_from_filename(self, filename): # TestProcessor 클래스 내부에서만 호출될 것이라는 표시를 위해 메서드 앞에 '_'를 붙였다
+    def get_attack_type_from_filename(self, filename): # models_main에서도 호출됨
         """
         개별 파일 이름에서 공격 유형과 세부 정보를 추출하는 메서드
         ex. 'dataset_fabrication_aid=044.parquet' -> ('fabrication', 'aid=044')"""
@@ -210,7 +210,7 @@ class TestPreprocessor():
         
         return attack_type, sub_identifier
     
-    def _prepare_raw_data_by_attack_file(self, attack_types_to_process=None):
+    def _prepare_raw_data_by_attack_file(self, attack_types_to_process=None): # TestProcessor 클래스 내부에서만 호출될 것이라는 표시를 위해 메서드 앞에 '_'를 붙였다
         """
         이때 요청된 공격 유형이 실제 파일로 존재하지 않으면 처리되지 않음. 별도 경고 없음.
 
@@ -233,7 +233,7 @@ class TestPreprocessor():
 
         attack_types_in_files = set()
         for file_path in all_files:
-            attack_type, _ = self._get_attack_type_from_filename(file_path.name) # 튜플 언팩킹
+            attack_type, _ = self.get_attack_type_from_filename(file_path.name) # 튜플 언팩킹
             # 전처리할 공격 유형 목록이 지정되지 않았거나(None/빈 리스트), 현재 파일의 공격 유형이 지정된 목록에 포함되어 있을 때만 처리
             if attack_types_to_process is None or len(attack_types_to_process) == 0:
                 # attack_types_to_process가 None 또는 비어 있으면 모든 공격 유형을 처리

@@ -17,14 +17,9 @@ class MinMaxScalerFromDBC:
         각 신호의 이름과 해당 스케일링 정보를 딕셔너리에 저장.
         예: {'ID_SIGNALNAME': {'min': min_val, 'max': max_val}}
         """
-        try:
-            self.db = cantools.database.load_file(str(self.dbc_file_path))
-            print(f"DBC 파일 '{self.dbc_file_path}' 로드 완료.")
-        except Exception as e:
-            print(f"DBC 파일 로드 중 오류 발생: {e}")
-            self.db = None
-            return
-
+        self.db = cantools.database.load_file(str(self.dbc_file_path))
+        print(f"DBC 파일 '{self.dbc_file_path}' 로드 완료.")
+        
         for message in self.db.messages:
             message_id = message.frame_id
             for signal in message.signals:

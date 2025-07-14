@@ -104,6 +104,7 @@ class DataDecoder:
         parsed_ID = self.parsed_ID
         store = []
         t = time
+        ignore_aid = []
 
         # 각 그룹(unique한 Identifier)에 대해 for문 실행
         for identifier in self.Identifiers:
@@ -120,6 +121,9 @@ class DataDecoder:
                 
             else:
                 print(f"{identifier}(이)가 list에 없거나 무언가 잘못되었습니다.")
+                ignore_aid.append(identifier)
+
+            print(f"처리되지 않은 aid: {ignore_aid}")
 
         # concat은 루프 밖에서하고, concat한 데이터프레임 출력
         df_merged = pd.concat(store, axis=1, verify_integrity=False)

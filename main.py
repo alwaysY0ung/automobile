@@ -25,24 +25,24 @@ def main():
     train_pp5.step1()
     print(f"{__name__}: train datasets, step1 완료")
 
-    df1_merged = train_pp1.step2(df_merged_path='./cache/df1_merged_0025.parquet',
-                         time='0.0025s',
+    df1_merged = train_pp1.step2(df_merged_path='./cache/df1_merged_005.parquet',
+                         time='0.005s',
                          dbc_path='datasets/hyundai_2015_ccan.dbc') # 모두 기본값 사용
 
-    df2_merged = train_pp2.step2(df_merged_path='./cache/df2_merged_0025.parquet',
-                         time='0.0025s',
+    df2_merged = train_pp2.step2(df_merged_path='./cache/df2_merged_005.parquet',
+                         time='0.005s',
                          dbc_path='datasets/hyundai_2015_ccan.dbc') 
 
-    df3_merged = train_pp2.step2(df_merged_path='./cache/df3_merged_0025.parquet',
-                        time='0.0025s',
+    df3_merged = train_pp2.step2(df_merged_path='./cache/df3_merged_005.parquet',
+                        time='0.005s',
                         dbc_path='datasets/hyundai_2015_ccan.dbc') 
 
-    df4_merged = train_pp2.step2(df_merged_path='./cache/df4_merged_0025.parquet',
-                        time='0.0025s',
+    df4_merged = train_pp2.step2(df_merged_path='./cache/df4_merged_005.parquet',
+                        time='0.005s',
                         dbc_path='datasets/hyundai_2015_ccan.dbc')
     
-    df5_merged = train_pp2.step2(df_merged_path='./cache/df5_merged_0025.parquet',
-                        time='0.0025s',
+    df5_merged = train_pp2.step2(df_merged_path='./cache/df5_merged_005.parquet',
+                        time='0.005s',
                         dbc_path='datasets/hyundai_2015_ccan.dbc')
 
 
@@ -51,7 +51,7 @@ def main():
     # test datasets preprocessing
     # test_pp = TestPreprocessor(raw_data_dir='datasets/test')
     test_pp = TestPreprocessor(raw_data_dir='datasets/intrusion_datasets')
-    test_pp.step1(time='0.0025s')
+    test_pp.step1(time='0.005s')
     print(f"{__name__}: test datasets, step1 완료")
 
     # model (from conv2d.py)
