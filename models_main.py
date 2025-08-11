@@ -8,17 +8,15 @@ import keras.api.ops as K
 from sklearn.metrics import roc_auc_score, roc_curve, f1_score, precision_score, recall_score
 from pathlib import Path
 import pandas as pd
-import cantools
 import wandb
 import sys
+import argparse
 
 from model_manager import make_model_mse, model_logging, ScaleChecker
 from model_Conv1D_50 import make_conv1D
 from model_BiLSTM import BiLSTM
 
 from preprocessing import TestPreprocessor
-
-# from preproccessing import Preprocessor
 
 class TimeseriesGenerator(utils.Sequence):
     def __init__(self, data, length, sampling_rate=1, stride=1, start_index=0, end_index=None, shuffle=False,
@@ -163,56 +161,72 @@ class AUCCheckCallback(callbacks.Callback):
         auc_score = roc_auc_score(self.gt, error)
         logs['AUC'] = auc_score
 
-        # for f1-score
-        fpr, tpr, thresholds = roc_curve(self.gt, error) # (y_true, y_pred)
-        optimal_idx = (tpr - fpr).argmax() # 가로축이 fpr, 세로축이 tpr (fpr 변화 대비 tpr 변화가 커야해서)
-        optimal_threshold = thresholds[optimal_idx]
-        y_pred_optimal = (error >= optimal_threshold).astype(int) # binary 예측값 만들기
-        f1 = f1_score(self.gt, y_pred_optimal)
-        logs['f1-score'] = f1
+        # # for f1-score
+        # fpr, tpr, thresholds = roc_curve(self.gt, error) # (y_true, y_pred)
+        # optimal_idx = (tpr - fpr).argmax() # 가로축이 fpr, 세로축이 tpr (fpr 변화 대비 tpr 변화가 커야해서)
+        # optimal_threshold = thresholds[optimal_idx]
+        # y_pred_optimal = (error >= optimal_threshold).astype(int) # binary 예측값 만들기
+        # f1 = f1_score(self.gt, y_pred_optimal)
+        # logs['f1-score'] = f1
 
-        # for precision
-        precision = precision_score(self.gt, y_pred_optimal)
-        logs['precision'] = precision
+        # # for precision
+        # precision = precision_score(self.gt, y_pred_optimal)
+        # logs['precision'] = precision
 
-        # for recall
-        recall = recall_score(self.gt, y_pred_optimal)
-        logs['recall'] = recall
+        # # for recall
+        # recall = recall_score(self.gt, y_pred_optimal)
+        # logs['recall'] = recall
 
-        # print(f"DEBUG: self.gt.shape: {self.gt.shape}")
-        # print(f"DEBUG: error.shape: {error.shape}")
-        # print(f"DEBUG: self.gt.values.flatten().shape: {self.gt.values.flatten().shape}")
-        # print(f"DEBUG: error.flatten().shape: {error.flatten().shape}")
-        # print(f"DEBUG: self.gt.values.flatten()[:5]: {self.gt.values.flatten()[:5]}")
-        # print(f"DEBUG: error.flatten()[:5]: {error.flatten()[:5]}")
-
-        y_true_for_plot = self.gt # 실제 레이블 (1이 intrusion)
-        y_probas_for_plot = np.column_stack([1 - error, error]) # Shape: (num_samples, 2) # # 정상 클래스(레이블 0)의 "확률"은 1 - error가 된다
+        # y_true_for_plot = self.gt # 실제 레이블 (1이 intrusion)
+        # y_probas_for_plot = np.column_stack([1 - error, error]) # Shape: (num_samples, 2) # # 정상 클래스(레이블 0)의 "확률"은 1 - error가 된다
 
         wandb.log({
-            "epoch_auc": auc_score, 
-            "epoch_f1_score": f1,
-            "epoch_precision": precision,
-            "epoch_recall": recall,
+            "epoch_auc": auc_score,
             "epoch": epoch,
             "train_loss": logs.get('loss'),
             "val_loss": logs.get('val_loss'),
             "mse_distribution": wandb.Histogram(error), # MSE 분포 시각화
-            "roc_curve": wandb.plot.roc_curve(
-                    y_true=y_true_for_plot,
-                    y_probas=y_probas_for_plot, # (num_samples, 2) 형태의 예측 확률
-                    labels=['Normal', 'Intrusion'], # 클래스 레이블
-                    classes_to_plot=[0, 1] # 정상(0)과 침입(1) 두 클래스 모두 플로팅
-                )
         })  # wandb logging
 
+        # wandb.log({
+        #     "epoch_auc": auc_score, 
+        #     "epoch_f1_score": f1,
+        #     "epoch_precision": precision,
+        #     "epoch_recall": recall,
+        #     "epoch": epoch,
+        #     "train_loss": logs.get('loss'),
+        #     "val_loss": logs.get('val_loss'),
+        #     "mse_distribution": wandb.Histogram(error), # MSE 분포 시각화
+        #     "roc_curve": wandb.plot.roc_curve(
+        #             y_true=y_true_for_plot,
+        #             y_probas=y_probas_for_plot, # (num_samples, 2) 형태의 예측 확률
+        #             labels=['Normal', 'Intrusion'], # 클래스 레이블
+        #             classes_to_plot=[0, 1] # 정상(0)과 침입(1) 두 클래스 모두 플로팅
+        #         )
+        # })  # wandb logging
+
 def main():
-    global num_features
-    window_size = 150
-    batch_size = 64
+    # 입력받을 값 등록
+    parser = argparse.ArgumentParser(description="Process some hyper parameter!")
+    parser.add_argument('--batch_size', required=False, default=256, type=int)
+    parser.add_argument('--epochs', required=False, default=2000, type=int)
+    parser.add_argument('--window_size', required=False, default=150, type=int)
+    parser.add_argument('--learning_rate', required=False, default=0.0001, type=float)
+    parser.add_argument('--sampling_rate', required=False, default='0.005s', type=str)
+    parser.add_argument('--hidden_space', required=False, default=125, type=int)
+
+    # 입력받은 값을 args에 저장 (type: namespace)
+    args = parser.parse_args()
+
     num_features = 107
-    epochs=1
-    time = '0.005s'
+
+    # 안전을 위해 argparse에서 받아온 값을 명시적으로 형 변환
+    batch_size = int(args.batch_size)
+    epochs = int(args.epochs)
+    window_size = int(args.window_size)
+    lr = float(args.learning_rate)
+    time = str(args.sampling_rate)
+    hidden_space = int(args.hidden_space)
 
     print(f"==========이번 실험의 time sampling 기준: {time}==========")
     time_value = time[2:-1]  # '0.005'
@@ -221,12 +235,15 @@ def main():
         entity="alwaysy0ung-smwu",
         project="autoencoder-intrusion-detection",
         config={
-            "window_size": window_size,
-            "batch_size": batch_size,
-            "num_features": num_features,
-            "epochs": epochs,
-            "architecture": "Conv1D_Autoencoder",
+            "architecture": "BiLSTM_Autoencoder",
             "dataset": "CAN_Bus_Intrusion",
+            "window_size": window_size,
+            "num_features": num_features,
+            "batch_size": batch_size,
+            "epochs": epochs,
+            "learning_rate" : lr,
+            "sampling_rate" : time,
+            "hidden_space" : hidden_space,
             "optimizer": "adam",
             "loss": "mse"
         },
@@ -272,9 +289,9 @@ def main():
     test = TimeseriesGenerator(data=df_test.to_numpy(), length=window_size, label = gt_)
 
     # 모델 선택하기
-    model = BiLSTM()
+    model = BiLSTM(window_size=window_size, batch_size=batch_size, hidden_space = hidden_space)
     # 학습률(learning rate) 설정 및 compile
-    custom_adam = optimizers.Adam(learning_rate=0.0001)
+    custom_adam = optimizers.Adam(learning_rate=lr)
     model.compile(optimizer=custom_adam, loss='mse')
 
     model_mse = make_model_mse(model)
@@ -288,10 +305,11 @@ def main():
 
     early_stopping = callbacks.EarlyStopping(
         monitor='val_loss', # 또는 'AUC'로 설정하고 mode='max'로 변경
-        patience=25,        # N 에포크 동안 개선 없으면 중단 (2000 에포크에 50값)
+        patience=50,        # N 에포크 동안 개선 없으면 중단 (2000 에포크에 50값)
         restore_best_weights=True # 가장 좋은 가중치 복원
     )
 
+    name = f'autoencoder_model_{pd.Timestamp.now().strftime("%y%m%d_%H%M")}.keras' # 학습 시작 시점에 이름 정의
     try:
         history = model.fit(
             train,
@@ -307,26 +325,27 @@ def main():
         print(f"예상치 못한 오류 발생: {e}")
         sys.exit(1) # 프로그램 종료
 
+    flag = 1
     # train 및 validation 완료, test 시작
     test_results_for_table = []
     test_pp = TestPreprocessor()
-    attack_type_list = ['fabrication', 'fuzz', 'masquderade', 'replay'] # suspension
+    attack_type_list = ['fabrication', 'fuzz', 'masquderade', 'replay'] # suspension # 35, 17, 35, 4, 35
     for attack_type in attack_type_list:
         current_path = './cache/' + attack_type
         test_parquet_files = sorted(list(Path(current_path).glob(f'*{time_value}.parquet'))) # test 단계에서의 sampling time 조정
         for test_file in test_parquet_files:
-                print(f"[{attack_type}] 유형: test 파일 - <{test_file}>")
+                print(f"=============({flag}/91)=============[{attack_type}] 유형: test 파일 - <{test_file}>========================")
                 df_test = pd.read_parquet(test_file)
-                ScaleChecker(df_test) # min-max scaling 되어있는지 확인
-                df_test_label = df_test[['label']].copy() # Time 컬럼이 인덱스 컬럼이라 다음과 같이 할 수 없음:     df_test_label = df_test[['Time', 'label']].copy()
-                df_test = df_test.drop('label', axis=1)
+                # ScaleChecker(df_test) # min-max scaling 되어있는지 확인
+                df_test_label = df_test[['label']].copy() # Time (index column), label
+                df_test = df_test.drop('label', axis=1) # Time (index column), 107 features
                 gt_ = df_test_label.rolling(window_size).max().dropna() # preprocessing 단계에 없고 여기서 처리해주어야함
                 # print(df_test.shape[0] - window_size + 1)
                 # print(gt_.shape[0])
                 assert df_test.shape[0] - window_size + 1 == gt_.shape[0], '제~~~~~~~~~~발 이러지 말어요'
                 test = TimeseriesGenerator(data=df_test.to_numpy(), length=window_size, label = gt_)
 
-                print(f"test_data_info=========================\ntest_shape: {df_test.shape}\nnum_anomalies: {int(gt_.sum().iloc[0])}\nanomaly_ratio: {float(gt_.mean().iloc[0])}")
+                print(f"[test_data_info]\ntest_shape: {df_test.shape}\nnum_anomalies: {int(gt_.sum().iloc[0])}\nanomaly_ratio: {float(gt_.mean().iloc[0])}")
 
                 # test auc
                 y_pred = model_mse.predict(test, verbose=1) # 여기서는 model_mse가 '오차'를 출력하도록 설계되었으므로, 예측 결과가 바로 오차다 (y_pred)
@@ -343,7 +362,6 @@ def main():
                 test_recall = recall_score(y_true, y_pred_optimal)
 
                 print(f"    - AUC: {test_auc:.4f}, F1: {test_f1:.4f}, P: {test_precision:.4f}, R: {test_recall:.4f}, optimal_threshold: {optimal_threshold}")
-
                 _, sub_identifier = test_pp.get_attack_type_from_filename(test_file.name) # : test_file은 경로를 포함하므로
                 test_results_for_table.append({
                     "Attack_Type": attack_type,
@@ -353,15 +371,16 @@ def main():
                     "Precision": test_precision,
                     "Recall": test_recall
                 })
+                flag+=1
 
-    columns = ["Attack_Type", "Info", "AUC", "F1_Score", "Precision", "Recall"]
-    test_performance_table = wandb.Table(data=test_results_for_table, columns=columns)
+    df_test_performance = pd.DataFrame(test_results_for_table) # 딕셔너리 리스트를 Pandas DataFrame으로 변환
+    test_performance_table = wandb.Table(dataframe=df_test_performance) # Pandas DataFrame을 wandb.Table의 data 인자로 전달
     wandb.log({"final_test_performance_table": test_performance_table})
+
     wandb.log({"time resample frequency": time})
     print(f"\n{len(test_results_for_table)} 길이의 최종 test 결과가 WandB Table에 logged됨.")
 
-    # --- 추가: 모델 저장 ---
-    name = f'autoencoder_model_{pd.Timestamp.now().strftime("%y%m%d_%H%M")}.keras'
+    # ===== 모델 저장 =====
     models_dir = Path('./models')
     model_path = models_dir / name
     model.save(model_path)
@@ -371,7 +390,7 @@ def main():
     model_artifact = wandb.Artifact(
         name="autoencoder_model",
         type="model",
-        description="Conv1D Autoencoder for CAN bus intrusion detection"
+        description="BiLSTM Autoencoder for CAN bus intrusion detection"
     )
     model_artifact.add_file(str(model_path)) # model_path는 path객체이므로 str 형변환이 필요
     run.log_artifact(model_artifact)

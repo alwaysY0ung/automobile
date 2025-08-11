@@ -90,7 +90,7 @@ class TrainPreprocessor():
     
 class TestPreprocessor():
     """
-    사용 예시: estPreprocessor 인스턴스를 유지하면서, 필요에 따라 step1()을 호출할 때마다 다른 공격 유형 목록을 지정하여 전처리를 수행할 수 있음
+    사용 예시: TestPreprocessor 인스턴스를 유지하면서, 필요에 따라 step1()을 호출할 때마다 다른 공격 유형 목록을 지정하여 전처리를 수행할 수 있음
     test_pp = TestPreprocessor(...)
     results_fab = test_pp.step1(attack_types_to_process=['fabrication'])
     results_fuzz = test_pp.step1(attack_types_to_process=['fuzz'])
@@ -193,6 +193,8 @@ class TestPreprocessor():
 
         # 공격유형
         match = re.match(r'dataset_([a-zA-Z]+)(_.*)?\.parquet', filename) # '+' : 앞의 형식이 한 글자 이상 반복되는 조건을 의미,  '?': (_.*)가 있을 수도 있고 없을 수도 있음을 의미
+        if match == None:
+            match = re.match(r'test([a-zA-Z]+)(_.*)?\.parquet', filename)
         if match:
             attack_type = match.group(1).lower() # 정규표현식 중 두 번째 그룹, 즉 ([a-zA-Z]+) 부분을 의미
 
@@ -295,7 +297,7 @@ class TestPreprocessor():
     def label_to_gt(self, df_raw_for_labels, time): # gt = ground truth
         """
         Raw test 데이터에서 'label' 컬럼을 추출하고, 사용자 정의 처리를 거쳐
-        Ground Truth 레이블 데이터프레임을 생성합니다.
+        Ground Truth 레이블 데이터프레임을 생성.
         """
         df = df_raw_for_labels.copy()
 

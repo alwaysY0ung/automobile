@@ -130,7 +130,7 @@ class DataDecoder:
         print("1\n",df_merged)
         df_merged = df_merged[~df_merged.index.duplicated(keep='last')]
         print("2\n",df_merged)
-        df_merged = df_merged.ffill().dropna() # ffill -> dropna -> 107개 추출
+        # df_merged = df_merged.ffill().dropna() # ffill -> dropna -> 107개 추출
         print("3\n",df_merged)
         the_107_signals = [
             '044_CR_Datc_OutTempC', '044_CF_Datc_IncarTemp', '080_PV_AV_CAN', '080_N', '080_TQI_ACOR',
@@ -158,6 +158,7 @@ class DataDecoder:
         df_merged = df_merged[[col for col in the_107_signals if col in df_merged.columns]] # df_merged에 107컬럼에 존재하지 않는 컬럼명이 있으면 에러 발생하므로 이를 방지
                                                                                             # df_merged > 107컬럼 포함관계라면 df_merged = df_merged[the_107_signals] 로 빠르게 연산 가능
         print("4\n",df_merged)
+        df_merged = df_merged.ffill().dropna() # ffill -> dropna -> 107개 추출
         return df_merged
 
     def deserialize(self, identifier, time=False, flag=True):

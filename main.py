@@ -8,15 +8,15 @@ def main():
     # train datasets preprocessing
     # feature preprocessing (from preproccessing.py)
     train_pp1 = TrainPreprocessor(raw_path='./datasets/logfile2022-11-01_11-56-50.txt',
-                 cache_path='./cache/df1.parquet') # 파라미터 2개 모두 기본값 사용
+                cache_path='./cache/df1.parquet') # 파라미터 2개 모두 기본값 사용
     train_pp2 = TrainPreprocessor(raw_path='./datasets/logfile2022-11-01_12-21-04.txt',
-                 cache_path='./cache/df1.parquet')
+                cache_path='./cache/df2.parquet')
     train_pp3 = TrainPreprocessor(raw_path='./datasets/logfile2022-11-01_13-00-02.txt',
-                 cache_path='./cache/df1.parquet')
+                cache_path='./cache/df3.parquet')
     train_pp4 = TrainPreprocessor(raw_path='./datasets/logfile2022-11-01_13-25-08.txt',
-                 cache_path='./cache/df1.parquet')
+                cache_path='./cache/df4.parquet')
     train_pp5 = TrainPreprocessor(raw_path='./datasets/logfile2022-11-01_14-02-06.txt',
-                cache_path='./cache/df1.parquet')
+                cache_path='./cache/df5.parquet')
 
     train_pp1.step1() # print(df1) # 잘됨
     train_pp2.step1()
@@ -33,23 +33,21 @@ def main():
                          time='0.005s',
                          dbc_path='datasets/hyundai_2015_ccan.dbc') 
 
-    df3_merged = train_pp2.step2(df_merged_path='./cache/df3_merged_005.parquet',
+    df3_merged = train_pp3.step2(df_merged_path='./cache/df3_merged_005.parquet',
                         time='0.005s',
                         dbc_path='datasets/hyundai_2015_ccan.dbc') 
 
-    df4_merged = train_pp2.step2(df_merged_path='./cache/df4_merged_005.parquet',
+    df4_merged = train_pp4.step2(df_merged_path='./cache/df4_merged_005.parquet',
                         time='0.005s',
                         dbc_path='datasets/hyundai_2015_ccan.dbc')
     
-    df5_merged = train_pp2.step2(df_merged_path='./cache/df5_merged_005.parquet',
+    df5_merged = train_pp5.step2(df_merged_path='./cache/df5_merged_005.parquet',
                         time='0.005s',
                         dbc_path='datasets/hyundai_2015_ccan.dbc')
 
 
     print(f"{__name__}: train datasets, step2 완료")
 
-    # test datasets preprocessing
-    # test_pp = TestPreprocessor(raw_data_dir='datasets/test')
     test_pp = TestPreprocessor(raw_data_dir='datasets/intrusion_datasets')
     test_pp.step1(time='0.005s')
     print(f"{__name__}: test datasets, step1 완료")

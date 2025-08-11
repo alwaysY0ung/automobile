@@ -25,23 +25,24 @@ class MinMaxScalerFromDBC:
             for signal in message.signals:
                 # DBC 파일의 신호 이름과 데이터프레임 컬럼 이름이 'ID_SIGNALNAME' 형식에 맞게 조합
                 # ID를 16진수 3자리로 포맷팅 (예: 044, 5A0)
-                column_name = f"{message_id:03X}_{signal.name}"
-                
-                if signal.is_float or (signal.minimum is not None and signal.maximum is not None):
-                    self.signal_ranges[column_name] = {
-                        'min': signal.minimum,
-                        'max': signal.maximum
-                    }
-                else:
+                column_name = f"{message_id:03X}_{signal.name}"         
 
+                if signal.is_float or (signal.minimum is not 0.0 and signal.maximum is not 0.0):
                     self.signal_ranges[column_name] = {
-                        'min': signal.minimum if signal.minimum is not None else 0.0,
-                        'max': signal.maximum if signal.maximum is not None else (2**signal.length - 1) * signal.scale + signal.offset
+                        'min': signal.offset,
+                        'max': (2**signal.length - 1) * signal.scale + signal.offset
                     }
-                # 예외처리
-                if self.signal_ranges[column_name]['min'] == self.signal_ranges[column_name]['max']:
-                    self.signal_ranges[column_name]['min'] = 0.0 # 스케일링 불가하므로 0~1 범위의 중간값으로 스케일링되도록 기본값 설정
-                    self.signal_ranges[column_name]['max'] = 1.0
+
+                # if signal.is_float or (signal.minimum is not 0.0 and signal.maximum is not 0.0):
+                #     self.signal_ranges[column_name] = {
+                #         'min': signal.minimum,
+                #         'max': signal.maximum
+                #     }
+                # if signal.minimum == signal.maximum:
+                #     self.signal_ranges[column_name] = {
+                #         'min': signal.offset,
+                #         'max': (2**signal.length - 1) * signal.scale + signal.offset
+                #     }
 
 
     def scale(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -74,14 +75,11 @@ class MinMaxScalerFromDBC:
             max_val = self.signal_ranges[col]['max']
 
             if max_val == min_val:
-                # min과 max가 같으면 스케일링 무의미 (0으로 채우거나 0.5로 채우는 등 정책 필요)
-                # 여기서는 0으로 채우도록 합니다.
                 df_scaled[col] = 0.0
                 print(f"경고: 컬럼 '{col}'의 Min/Max 값이 동일하여 0으로 스케일링되었습니다. (Min: {min_val}, Max: {max_val})")
             else:
                 df_scaled[col] = (df_scaled[col] - min_val) / (max_val - min_val)
-                # 스케일링 후 값이 [0, 1] 범위를 벗어날 수 있으므로 클리핑 (이상치 처리)
-                df_scaled[col] = df_scaled[col].clip(0.0, 1.0)
+                # df_scaled[col] = df_scaled[col].clip(0.0, 1.0) # 스케일링 후 값이 [0, 1] 범위를 벗어날 수 있으므로 클리핑 (이상치 처리) => 클리핑 처리는 '클래스 단위로 살펴보기' 분석 결과에 따라 수행하지 않음 (notion)
                 # print(f"컬럼 '{col}' 스케일링 완료. (Min: {min_val}, Max: {max_val})")
         
         # 'label' 컬럼이 있었다면 다시 추가
