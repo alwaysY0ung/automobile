@@ -23,22 +23,22 @@ class MinMaxScalerFromDBC:
         for message in self.db.messages:
             message_id = message.frame_id
             for signal in message.signals:
-                # DBC 파일의 신호 이름과 데이터프레임 컬럼 이름이 'ID_SIGNALNAME' 형식에 맞게 조합
-                # ID를 16진수 3자리로 포맷팅 (예: 044, 5A0)
-                column_name = f"{message_id:03X}_{signal.name}"         
+                column_name = f"{message_id:03X}_{signal.name}" 
 
+                # [prof sol: train_fixed]
                 if signal.is_float or (signal.minimum is not 0.0 and signal.maximum is not 0.0):
+                    self.signal_ranges[column_name] = {
+                        'min': signal.minimum,
+                        'max': signal.maximum
+                    }
+                if signal.minimum == signal.maximum:
                     self.signal_ranges[column_name] = {
                         'min': signal.offset,
                         'max': (2**signal.length - 1) * signal.scale + signal.offset
                     }
-
+                    
+                # # [new sol: scale fixed (all 0~1)]
                 # if signal.is_float or (signal.minimum is not 0.0 and signal.maximum is not 0.0):
-                #     self.signal_ranges[column_name] = {
-                #         'min': signal.minimum,
-                #         'max': signal.maximum
-                #     }
-                # if signal.minimum == signal.maximum:
                 #     self.signal_ranges[column_name] = {
                 #         'min': signal.offset,
                 #         'max': (2**signal.length - 1) * signal.scale + signal.offset

@@ -377,6 +377,9 @@ def main():
     test_performance_table = wandb.Table(dataframe=df_test_performance) # Pandas DataFrame을 wandb.Table의 data 인자로 전달
     wandb.log({"final_test_performance_table": test_performance_table})
 
+    # big theta 계산하는 새로운 로직으로 test하기
+    
+
     wandb.log({"time resample frequency": time})
     print(f"\n{len(test_results_for_table)} 길이의 최종 test 결과가 WandB Table에 logged됨.")
 
@@ -385,6 +388,23 @@ def main():
     model_path = models_dir / name
     model.save(model_path)
     print(f"\n[models]: '{name}' has been saved in '{model_path}'") # 저장할 건 model_mse가 아닌 conv1D. 왜냐면 model_mse는 새로운 가중치를 학습하지 않음. 단순히 conv1D의 입출력 텐서를 사용하여 K.mean(K.square(input_s - output_s), axis=[1, 2]) 연산을 수행하는 연산 그래프 또는 함수 역할이므로.
+
+    # ===== Intrusion Detection and Explanation =====
+    print("\n[intrusion Detection and Explanation]: Big Theta 작업 시작")
+    """
+    pseudo code:
+    1. 저장된 모델 불러오기
+    2. train 데이터셋에 대해 모델을 사용하여 예측 수행 및 l(i)의 집합인 벡터 l 생성 - a
+    3. validation 데이터셋에 대해 모델을 사용하여 예측 수행 및 l(i)의 집합인 벡터 l 생성 - b
+    4. a를 이용하여 small theta 작업 및 small theta의 집합인 벡터 생성 - c
+    5. 길이가 x(107)인 벡터 r을 생성: r(i) = b / c
+    6. big theta = percentile(r, q) # 0.95 <= q <= 1.0
+    7. big theta를 이용하여 r(i) > big theta인 경우를 이상치로 판단
+    """
+
+
+
+
 
     # 모델을 wandb artifact로 저장
     model_artifact = wandb.Artifact(

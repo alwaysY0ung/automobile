@@ -1,5 +1,6 @@
 from keras import layers
 from keras import models
+from model_manager import make_model_mse2
 
 def BiLSTM(window_size = 150, batch_size = 64, hidden_space = 125):
     # Input layer
@@ -23,5 +24,5 @@ def BiLSTM(window_size = 150, batch_size = 64, hidden_space = 125):
     return model
 
 if __name__ == '__main__':
-    model = BiLSTM()
+    model = make_model_mse2(BiLSTM())
     model.summary(expand_nested=True)
